@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Hästlogg</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#111b2e;
+      --card2:#0f172a;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --accent:#38bdf8;
+      --good:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --border:rgba(255,255,255,.08);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --radius2:22px;
+      --pad:14px;
+      --cell: 48px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 30% 0%, #0f1b33 0%, var(--bg) 60%);
+      color:var(--text);
+    }
+    button, input, textarea{font:inherit}
+    .app{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px 12px 28px;
+    }
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: linear-gradient(to bottom, rgba(11,18,32,.98), rgba(11,18,32,.65));
+      backdrop-filter: blur(10px);
+      padding: 12px 0 10px;
+    }
+    .row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .spacer{flex:1}
+    .pill{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+    }
+    .btn{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:hover{background: rgba(255,255,255,.09)}
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{
+      background: rgba(56,189,248,.16);
+      border-color: rgba(56,189,248,.35);
+    }
+    .btn.small{padding: 8px 10px; border-radius: 10px}
+    .title{
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+    .muted{color: var(--muted)}
+    .counter{
+      font-weight: 700;
+      color: #dbeafe;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--border);
+      border-radius: var(--radius2);
+      box-shadow: var(--shadow);
+    }
+    .panel{
+      padding: 14px;
+      margin-top: 12px;
+    }
+
+    .monthHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .monthName{
+      font-size: 20px;
+      font-weight: 800;
+    }
+    .gridWrap{padding: 12px 14px 14px}
+    .dow{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .dow div{padding-left: 6px}
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+    .day{
+      height: var(--cell);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.10);
+      padding: 8px 8px 7px;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      position:relative;
+      overflow:hidden;
+    }
+    .day.other{
+      opacity:.45;
+    }
+    .day.today{
+      outline: 2px solid rgba(56,189,248,.45);
+      box-shadow: 0 0 0 6px rgba(56,189,248,.08);
+    }
+    .day.has{
+      background: rgba(34,197,94,.10);
+      border-color: rgba(34,197,94,.35);
+    }
+    .dateRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 6px;
+    }
+    .dateNum{
+      font-weight: 800;
+      font-size: 13px;
+    }
+    .noteDot{
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(245,158,11,.9);
+      box-shadow: 0 0 0 4px rgba(245,158,11,.15);
+      flex:0 0 auto;
+    }
+    .chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 4px;
+      font-size: 11px;
+      color: #d1fae5;
+    }
+    .chip{
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(34,197,94,.30);
+      background: rgba(34,197,94,.12);
+      white-space:nowrap;
+    }
+
+    .summary{
+      margin-top: 12px;
+      padding: 12px 14px 14px;
+    }
+    .summary h3{
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      color: #dbeafe;
+      letter-spacing: .02em;
+    }
+    .sumGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .sumItem{
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .sumItem b{font-size: 15px}
+    .sumItem span{color: var(--muted)}
+
+    /* Modal */
+    .modalBackdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      padding: 10px;
+      z-index: 20;
+    }
+    .modalBackdrop.open{display:flex}
+    .modal{
+      width: min(980px, 100%);
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(17,27,46,.98), rgba(15,23,42,.98));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding: 12px 14px;
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modalTitle{
+      font-weight: 800;
+      font-size: 16px;
+    }
+    .modalBody{
+      padding: 14px;
+      display:grid;
+      gap: 12px;
+    }
+    .counterRow{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .counterBox{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      border-radius: 16px;
+      padding: 10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .tag{
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+    .controls{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+    }
+    .val{
+      width: 34px;
+      text-align:center;
+      font-weight: 900;
+    }
+    .round{
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      display:grid;
+      place-items:center;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      cursor:pointer;
+    }
+    .round:hover{background: rgba(255,255,255,.09)}
+    textarea{
+      width: 100%;
+      min-height: 90px;
+      resize: vertical;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+    }
+    .modalFoot{
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      display:flex;
+      gap: 10px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+    .hint{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (min-width: 720px){
+      .modalBackdrop{align-items:center}
+      .day{height: 58px}
+      :root{ --cell: 58px; }
+      .counterRow{grid-template-columns: repeat(4, minmax(0, 1fr))}
+      .sumGrid{grid-template-columns: repeat(4, minmax(0, 1fr))}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="row">
+        <div class="pill">
+          <button class="btn small" id="prevYear" aria-label="Föregående år">◀</button>
+          <div>
+            <div class="title" id="yearLabel">2026</div>
+            <div class="muted" style="font-size:12px;">Kalenderår</div>
+          </div>
+          <button class="btn small" id="nextYear" aria-label="Nästa år">▶</button>
+        </div>
+
+        <div class="pill">
+          <span class="muted" style="font-size:12px;">Händelser:</span>
+          <span class="counter" id="yearCount">0</span>
+          <span class="muted" style="font-size:12px;">tillfällen hittills</span>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="pill">
+          <button class="btn small" id="prevMonth" aria-label="Föregående månad">◀</button>
+          <div style="min-width: 160px;">
+            <div class="title" id="monthLabel">Januari</div>
+            <div class="muted" style="font-size:12px;" id="monthRange"></div>
+          </div>
+          <button class="btn small" id="nextMonth" aria-label="Nästa månad">▶</button>
+        </div>
+
+        <button class="btn primary" id="goToday">Idag</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="monthHead">
+        <div>
+          <div class="monthName" id="monthTitle">Januari 2026</div>
+          <div class="muted" style="font-size:12px;">Tryck på en dag för att fylla i.</div>
+        </div>
+        <button class="btn" id="openSummary">Månadsrapport</button>
+      </div>
+
+      <div class="gridWrap">
+        <div class="dow" aria-hidden="true">
+          <div>Mån</div><div>Tis</div><div>Ons</div><div>Tors</div><div>Fre</div><div>Lör</div><div>Sön</div>
+        </div>
+        <div class="grid" id="grid"></div>
+
+        <div class="summary card" id="summaryPanel" style="display:none;">
+          <h3>Månads-sammanställning</h3>
+          <div class="sumGrid" id="sumGrid"></div>
+          <div class="hint" id="sumHint" style="margin-top:10px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modalBackdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="modalHead">
+        <div>
+          <div class="modalTitle" id="modalTitle">Dag</div>
+          <div class="hint" id="modalSub">Justera räknare och skriv dagens logg.</div>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn" id="closeModal">Stäng</button>
+      </div>
+      <div class="modalBody">
+        <div class="counterRow" id="counterRow"></div>
+        <div>
+          <div class="hint" style="margin-bottom:6px;">Dagens logg</div>
+          <textarea id="note" placeholder="Skriv en kort notering..."></textarea>
+          <div class="hint" id="autosaveHint" style="margin-top:6px;"></div>
+        </div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn" id="clearDay">Nollställ dagen</button>
+        <button class="btn primary" id="saveDay">Spara</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Helpers ----------
+    const pad2 = (n) => String(n).padStart(2, "0");
+    const ymd = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    const parseYMD = (s) => {
+      const [y,m,d] = s.split("-").map(Number);
+      return new Date(y, m-1, d);
+    };
+    const monthNameSv = (m) => [
+      "Januari","Februari","Mars","April","Maj","Juni",
+      "Juli","Augusti","September","Oktober","November","December"
+    ][m];
+    const weekdayIndexMon0 = (date) => {
+      // JS: Sun=0..Sat=6 -> make Mon=0..Sun=6
+      const w = date.getDay();
+      return (w + 6) % 7;
+    };
+    const clamp0 = (n) => Math.max(0, n);
+
+    // ---------- Storage ----------
+    // Key per year to avoid collisions and make future migrations easier.
+    const LS_PREFIX = "hastlogg.v1.";
+    const loadYearData = (year) => {
+      const raw = localStorage.getItem(LS_PREFIX + year);
+      if (!raw) return {};
+      try { return JSON.parse(raw) || {}; }
+      catch { return {}; }
+    };
+    const saveYearData = (year, obj) => {
+      localStorage.setItem(LS_PREFIX + year, JSON.stringify(obj));
+    };
+
+    // Each day entry: { c:{m,mm,as,mdash}, note:"" }
+    const emptyCounts = () => ({ m:0, mm:0, as:0, mdash:0 });
+    const hasAny = (entry) => {
+      if (!entry) return false;
+      const c = entry.c || emptyCounts();
+      const sum = (c.m||0)+(c.mm||0)+(c.as||0)+(c.mdash||0);
+      const note = (entry.note||"").trim();
+      return sum > 0 || note.length > 0;
+    };
+
+    // ---------- App State ----------
+    const today = new Date();
+    let state = {
+      year: today.getFullYear(),
+      month: today.getMonth(), // 0-11
+      dataByYear: new Map(),   // year -> object
+      selectedDay: null,       // "YYYY-MM-DD"
+      summaryOpen: false,
+      autosaveTimer: null
+    };
+
+    const MARKERS = [
+      { key:"m", label:"m" },
+      { key:"mm", label:"mm" },
+      { key:"as", label:"as" },
+      { key:"mdash", label:"m-" }
+    ];
+
+    const getYearObj = (year) => {
+      if (!state.dataByYear.has(year)) {
+        state.dataByYear.set(year, loadYearData(year));
+      }
+      return state.dataByYear.get(year);
+    };
+
+    const getEntry = (dateStr) => {
+      const d = parseYMD(dateStr);
+      const year = d.getFullYear();
+      const yearObj = getYearObj(year);
+      return yearObj[dateStr] || null;
+    };
+
+    const setEntry = (dateStr, entry) => {
+      const d = parseYMD(dateStr);
+      const year = d.getFullYear();
+      const yearObj = getYearObj(year);
+      if (!hasAny(entry)) {
+        delete yearObj[dateStr];
+      } else {
+        yearObj[dateStr] = entry;
+      }
+      saveYearData(year, yearObj);
+    };
+
+    const yearTotalCount = (year) => {
+      const yearObj = getYearObj(year);
+      let sum = 0;
+      for (const k of Object.keys(yearObj)) {
+        const e = yearObj[k];
+        const c = e?.c || emptyCounts();
+        sum += (c.m||0)+(c.mm||0)+(c.as||0)+(c.mdash||0);
+      }
+      return sum;
+    };
+
+    const monthTotals = (year, month) => {
+      const yearObj = getYearObj(year);
+      const totals = emptyCounts();
+      let daysWith = 0;
+      let daysWithout = 0;
+
+      const first = new Date(year, month, 1);
+      const last = new Date(year, month+1, 0); // last day of month
+      const daysInMonth = last.getDate();
+
+      for (let day=1; day<=daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const key = ymd(d);
+        const e = yearObj[key];
+        const c = e?.c || emptyCounts();
+        const s = (c.m||0)+(c.mm||0)+(c.as||0)+(c.mdash||0);
+        if (s > 0) daysWith++;
+        else daysWithout++;
+        totals.m += (c.m||0);
+        totals.mm += (c.mm||0);
+        totals.as += (c.as||0);
+        totals.mdash += (c.mdash||0);
+      }
+      const totalAll = totals.m + totals.mm + totals.as + totals.mdash;
+      return { totals, totalAll, daysWith, daysWithout, daysInMonth };
+    };
+
+    // ---------- UI Elements ----------
+    const el = (id) => document.getElementById(id);
+    const gridEl = el("grid");
+    const yearLabel = el("yearLabel");
+    const yearCountEl = el("yearCount");
+    const monthLabel = el("monthLabel");
+    const monthTitle = el("monthTitle");
+    const monthRange = el("monthRange");
+    const summaryPanel = el("summaryPanel");
+    const sumGrid = el("sumGrid");
+    const sumHint = el("sumHint");
+
+    const modalBackdrop = el("modalBackdrop");
+    const modalTitle = el("modalTitle");
+    const counterRow = el("counterRow");
+    const noteEl = el("note");
+    const autosaveHint = el("autosaveHint");
+
+    // ---------- Render Calendar ----------
+    function renderHeader() {
+      yearLabel.textContent = state.year;
+      yearCountEl.textContent = yearTotalCount(state.year);
+
+      monthLabel.textContent = monthNameSv(state.month);
+      monthTitle.textContent = `${monthNameSv(state.month)} ${state.year}`;
+
+      const first = new Date(state.year, state.month, 1);
+      const last = new Date(state.year, state.month + 1, 0);
+      monthRange.textContent = `${pad2(first.getDate())}/${pad2(first.getMonth()+1)}–${pad2(last.getDate())}/${pad2(last.getMonth()+1)}`;
+    }
+
+    function dayChipsHTML(entry) {
+      const c = entry?.c || emptyCounts();
+      const pairs = [
+        ["m", c.m],
+        ["mm", c.mm],
+        ["as", c.as],
+        ["m-", c.mdash]
+      ].filter(([,v]) => (v||0) > 0);
+
+      if (pairs.length === 0) return "";
+      return `<div class="chips">` + pairs.map(([k,v]) => `<span class="chip">${k}:${v}</span>`).join("") + `</div>`;
+    }
+
+    function renderGrid() {
+      gridEl.innerHTML = "";
+
+      const firstOfMonth = new Date(state.year, state.month, 1);
+      const startOffset = weekdayIndexMon0(firstOfMonth); // 0..6
+      const startDate = new Date(state.year, state.month, 1 - startOffset);
+
+      // We render 6 weeks (42 cells) to keep stable layout
+      for (let i=0; i<42; i++) {
+        const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
+        const key = ymd(d);
+        const entry = getEntry(key);
+
+        const isOther = d.getMonth() !== state.month;
+        const isToday = (ymd(d) === ymd(new Date()));
+        const has = entry && ((entry.c?.m||0)+(entry.c?.mm||0)+(entry.c?.as||0)+(entry.c?.mdash||0) > 0);
+
+        const dayEl = document.createElement("div");
+        dayEl.className = "day" + (isOther ? " other" : "") + (isToday ? " today" : "") + (has ? " has" : "");
+        dayEl.setAttribute("data-date", key);
+
+        const note = (entry?.note || "").trim();
+        const noteDot = note.length ? `<span class="noteDot" title="Har notering"></span>` : "";
+
+        dayEl.innerHTML = `
+          <div class="dateRow">
+            <div class="dateNum">${d.getDate()}</div>
+            ${noteDot}
+          </div>
+          ${dayChipsHTML(entry)}
+        `;
+
+        dayEl.addEventListener("click", () => openDay(key));
+        gridEl.appendChild(dayEl);
+      }
+    }
+
+    function renderSummary() {
+      const { totals, totalAll, daysWith, daysWithout, daysInMonth } = monthTotals(state.year, state.month);
+
+      sumGrid.innerHTML = "";
+      const items = [
+        { k:"m", v: totals.m },
+        { k:"mm", v: totals.mm },
+        { k:"as", v: totals.as },
+        { k:"m-", v: totals.mdash },
+        { k:"Totalt", v: totalAll },
+        { k:"Dagar med", v: daysWith },
+        { k:"Dagar utan", v: daysWithout },
+        { k:"Dagar", v: daysInMonth }
+      ];
+
+      for (const it of items) {
+        const div = document.createElement("div");
+        div.className = "sumItem";
+        div.innerHTML = `<span>${it.k}</span><b>${it.v}</b>`;
+        sumGrid.appendChild(div);
+      }
+
+      sumHint.textContent = "Summering räknar endast markörer. Noteringar påverkar inte totalsumman.";
+    }
+
+    function renderAll() {
+      renderHeader();
+      renderGrid();
+      if (state.summaryOpen) renderSummary();
+    }
+
+    // ---------- Modal / Day Editing ----------
+    function openDay(dateStr) {
+      state.selectedDay = dateStr;
+
+      const d = parseYMD(dateStr);
+      const nice = `${d.getDate()} ${monthNameSv(d.getMonth())} ${d.getFullYear()}`;
+      modalTitle.textContent = nice;
+
+      const entry = getEntry(dateStr) || { c: emptyCounts(), note: "" };
+      const c = { ...emptyCounts(), ...(entry.c || {}) };
+
+      counterRow.innerHTML = "";
+      for (const m of MARKERS) {
+        const box = document.createElement("div");
+        box.className = "counterBox";
+        box.innerHTML = `
+          <div class="tag">${m.label}</div>
+          <div class="controls">
+            <div class="round" data-act="dec" data-key="${m.key}" aria-label="Minska">−</div>
+            <div class="val" id="val_${m.key}">${c[m.key] || 0}</div>
+            <div class="round" data-act="inc" data-key="${m.key}" aria-label="Öka">+</div>
+          </div>
+        `;
+        counterRow.appendChild(box);
+      }
+
+      noteEl.value = entry.note || "";
+      autosaveHint.textContent = "";
+
+      // Wire controls
+      counterRow.querySelectorAll(".round").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const key = btn.getAttribute("data-key");
+          const act = btn.getAttribute("data-act");
+          const valEl = document.getElementById("val_" + key);
+          const cur = Number(valEl.textContent) || 0;
+          const next = act === "inc" ? cur + 1 : clamp0(cur - 1);
+          valEl.textContent = next;
+          scheduleAutosave();
+        });
+      });
+
+      noteEl.oninput = () => scheduleAutosave();
+
+      modalBackdrop.classList.add("open");
+    }
+
+    function closeDay() {
+      modalBackdrop.classList.remove("open");
+      state.selectedDay = null;
+      clearTimeout(state.autosaveTimer);
+      state.autosaveTimer = null;
+    }
+
+    function readModalEntry() {
+      const dateStr = state.selectedDay;
+      if (!dateStr) return null;
+
+      const counts = emptyCounts();
+      for (const m of MARKERS) {
+        const v = Number(document.getElementById("val_" + m.key)?.textContent || 0);
+        counts[m.key] = clamp0(v);
+      }
+
+      const note = (noteEl.value || "").trim();
+      return { c: counts, note };
+    }
+
+    function scheduleAutosave() {
+      autosaveHint.textContent = "Sparar…";
+      clearTimeout(state.autosaveTimer);
+      state.autosaveTimer = setTimeout(() => {
+        const entry = readModalEntry();
+        if (!entry || !state.selectedDay) return;
+        setEntry(state.selectedDay, entry);
+        autosaveHint.textContent = "Sparat.";
+        renderAll();
+      }, 450);
+    }
+
+    // ---------- Navigation ----------
+    function setMonth(year, month) {
+      // month can be out of range
+      const d = new Date(year, month, 1);
+      state.year = d.getFullYear();
+      state.month = d.getMonth();
+      renderAll();
+    }
+
+    // ---------- Events ----------
+    el("prevYear").addEventListener("click", () => setMonth(state.year - 1, state.month));
+    el("nextYear").addEventListener("click", () => setMonth(state.year + 1, state.month));
+
+    el("prevMonth").addEventListener("click", () => setMonth(state.year, state.month - 1));
+    el("nextMonth").addEventListener("click", () => setMonth(state.year, state.month + 1));
+
+    el("goToday").addEventListener("click", () => setMonth(today.getFullYear(), today.getMonth()));
+
+    el("openSummary").addEventListener("click", () => {
+      state.summaryOpen = !state.summaryOpen;
+      summaryPanel.style.display = state.summaryOpen ? "block" : "none";
+      if (state.summaryOpen) renderSummary();
+    });
+
+    el("closeModal").addEventListener("click", closeDay);
+    modalBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalBackdrop) closeDay();
+    });
+
+    el("saveDay").addEventListener("click", () => {
+      const entry = readModalEntry();
+      if (!entry || !state.selectedDay) return;
+      setEntry(state.selectedDay, entry);
+      renderAll();
+      closeDay();
+    });
+
+    el("clearDay").addEventListener("click", () => {
+      if (!state.selectedDay) return;
+      setEntry(state.selectedDay, { c: emptyCounts(), note: "" });
+      // Reset modal UI
+      for (const m of MARKERS) {
+        const vEl = document.getElementById("val_" + m.key);
+        if (vEl) vEl.textContent = "0";
+      }
+      noteEl.value = "";
+      autosaveHint.textContent = "Nollställt.";
+      renderAll();
+    });
+
+    // Keyboard: Esc closes modal
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modalBackdrop.classList.contains("open")) closeDay();
+    });
+
+    // ---------- PWA ----------
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(()=>{});
+      });
+    }
+
+    // Init view to current month/year
+    setMonth(today.getFullYear(), today.getMonth());
+  </script>
+</body>
+</html>
